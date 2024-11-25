@@ -1,45 +1,45 @@
-## [19.7.20](https://github.com/Torwent/WaspLib/compare/v19.7.19...v19.7.20) (2024-09-27)
+# [19.12.0](https://github.com/Torwent/WaspLib/compare/v19.11.3...v19.12.0) (2024-11-25)
+
+
+### Features
+
+* loothandler form tab ([2b07fb8](https://github.com/Torwent/WaspLib/commit/2b07fb86215523182d8ea6212b55b4541098fbe9))
+
+
+
+## [19.11.3](https://github.com/Torwent/WaspLib/compare/v19.11.2...v19.11.3) (2024-11-24)
 
 
 ### Bug Fixes
 
-* better tanscreen click logic ([1f45fee](https://github.com/Torwent/WaspLib/commit/1f45fee98d7939fb562baff61f0af3d36dbbce74))
+* separate v1 from v2 ([3894f4b](https://github.com/Torwent/WaspLib/commit/3894f4b9b67822d31e1f72136f968e05caaabe67))
 
 
 
-## [19.7.19](https://github.com/Torwent/WaspLib/compare/v19.7.18...v19.7.19) (2024-09-26)
-
-
-### Bug Fixes
-
-* **CombatHandler:** Now works with TRSMap and TRSWalkerV2 ([c406e74](https://github.com/Torwent/WaspLib/commit/c406e749f3b829a6cc6d41053145c81036c89f7f))
-
-
-
-## [19.7.18](https://github.com/Torwent/WaspLib/compare/v19.7.17...v19.7.18) (2024-09-24)
+## [19.11.2](https://github.com/Torwent/WaspLib/compare/v19.11.1...v19.11.2) (2024-11-23)
 
 
 ### Bug Fixes
 
-* force bump ([443ad8b](https://github.com/Torwent/WaspLib/commit/443ad8b708cb076a69e09ad78c39ba47d7981ac3))
+* **formutils:** improved some logic with the newly added component constructors ([b5b337e](https://github.com/Torwent/WaspLib/commit/b5b337e0de3450ea64cfdaf18eb975826da0ea32))
 
 
 
-## [19.7.17](https://github.com/Torwent/WaspLib/compare/v19.7.16...v19.7.17) (2024-09-23)
-
-
-### Bug Fixes
-
-* **gearhandler:** better logic so loading from client is slightly faster ([1ac83fc](https://github.com/Torwent/WaspLib/commit/1ac83fc8b7e164b3fa1169c635fd743a20957647))
-
-
-
-## [19.7.16](https://github.com/Torwent/WaspLib/compare/v19.7.15...v19.7.16) (2024-09-21)
+## [19.11.1](https://github.com/Torwent/WaspLib/compare/v19.11.0...v19.11.1) (2024-11-19)
 
 
 ### Bug Fixes
 
-* **gearhandler:** small fixes ([4b426b8](https://github.com/Torwent/WaspLib/commit/4b426b8810a6de2ef922cf0344c997960914c23a))
+* readd TEdit and TMemo .Create methods ([ed95ed0](https://github.com/Torwent/WaspLib/commit/ed95ed07ebb6d42f558eb20fb6b80a86390b5b70))
+
+
+
+# [19.11.0](https://github.com/Torwent/WaspLib/compare/v19.10.0...v19.11.0) (2024-11-18)
+
+
+### Features
+
+* **formutils:** add a bunch of component constructors ([a84b4bf](https://github.com/Torwent/WaspLib/commit/a84b4bf5aa16581a42a5ca02c73aa075f3f60d14))
 
 
 

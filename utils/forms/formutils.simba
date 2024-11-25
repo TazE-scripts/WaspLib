@@ -165,21 +165,22 @@ This numbers can be Ints or Doubles.
 *)
 procedure TComponent.NumberField({$H-}sender: TObject;{$H+} var key: char);
 begin
-  if not (key in ['0'..'9']) then
-    key := #0;
+  if not (key in ['0'..'9', #8]) then key := #0;
 end;
 
-procedure TComponent.FloatField({$H-}sender: TObject;{$H+} var key: char);
+procedure TComponent.FloatField(sender: TObject; var key: char);
 begin
-  if not (key in ['0'..'9', #8, '.']) then
-    key := #0;
+  case key of
+    '0'..'9', #8: ;
+    '.': if TCustomEdit(sender).getText().Contains('.') then key := #0;
+    else key := #0;
+  end;
 end;
 
 
 procedure TComponent.MailField({$H-}sender: TObject;{$H+} var key: char);
 begin
-  if (key in [' ']) then
-    key := #0;
+  if key = ' ' then key := #0;
 end;
 
 (*
@@ -297,6 +298,38 @@ begin
   Self.SetParent(owner);
 end;
 
+procedure TPanel.Create(owner: TControl; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+end;
+
+procedure TPanel.Create(owner: TControl; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, topleft, dimensions);
+end;
+
+procedure TPanel.Create(owner: TControl; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, topleft + offset, dimensions, False);
+end;
+
+
 procedure TPageControl.Create(owner: TControl);
 begin
   Self.Init(owner);
@@ -309,11 +342,13 @@ begin
   Self.SetParent(owner);
 end;
 
+
 procedure TImage.Create(owner: TControl);
 begin
   Self.Init(owner);
   Self.SetParent(owner);
 end;
+
 
 procedure TLabel.Create(owner: TControl);
 begin
@@ -321,41 +356,79 @@ begin
   Self.SetParent(owner);
 end;
 
+procedure TLabel.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TLabel.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topLeft, dimensions);
+end;
+
+procedure TLabel.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
+end;
+
+
 procedure TEdit.Create(owner: TControl);
 begin
   Self.Init(owner);
   Self.SetParent(owner);
 end;
 
-procedure TButton.Create(owner: TControl);
+procedure TEdit.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
 begin
-  Self.Init(owner);
-  Self.SetParent(owner);
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
 end;
 
-procedure TCheckBox.Create(owner: TControl);
+procedure TEdit.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
 begin
-  Self.Init(owner);
-  Self.SetParent(owner);
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topLeft, dimensions);
 end;
 
-procedure TRadioButton.Create(owner: TControl);
+procedure TEdit.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
 begin
-  Self.Init(owner);
-  Self.SetParent(owner);
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
 end;
 
-procedure TComboBox.Create(owner: TControl);
-begin
-  Self.Init(owner);
-  Self.SetParent(owner);
-end;
-
-procedure TListBox.Create(owner: TControl);
-begin
-  Self.Init(owner);
-  Self.SetParent(owner);
-end;
 
 procedure TMemo.Create(owner: TControl);
 begin
@@ -363,16 +436,320 @@ begin
   Self.SetParent(owner);
 end;
 
+procedure TMemo.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TMemo.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topLeft, dimensions);
+end;
+
+procedure TMemo.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
+end;
+
+
+
+procedure TButton.Create(owner: TControl);
+begin
+  Self.Init(owner);
+  Self.SetParent(owner);
+end;
+
+procedure TButton.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TButton.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topLeft, dimensions);
+end;
+
+procedure TButton.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
+end;
+
+
+procedure TCheckBox.Create(owner: TControl);
+begin
+  Self.Init(owner);
+  Self.SetParent(owner);
+end;
+
+procedure TCheckBox.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TCheckBox.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topLeft, dimensions);
+end;
+
+procedure TCheckBox.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
+end;
+
+
+
+procedure TRadioButton.Create(owner: TControl);
+begin
+  Self.Init(owner);
+  Self.SetParent(owner);
+end;
+
+procedure TRadioButton.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TRadioButton.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topLeft, dimensions);
+end;
+
+procedure TRadioButton.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
+end;
+
+
+procedure TComboBox.Create(owner: TControl);
+begin
+  Self.Init(owner);
+  Self.SetParent(owner);
+  Self.setStyle(TComboBoxStyle.csDropDownList);
+end;
+
+procedure TComboBox.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TComboBox.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topLeft, dimensions);
+end;
+
+procedure TComboBox.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
+end;
+
+
+procedure TListBox.Create(owner: TControl);
+begin
+  Self.Init(owner);
+  Self.SetParent(owner);
+end;
+
+procedure TListBox.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TListBox.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topLeft, dimensions);
+end;
+
+procedure TListBox.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
+end;
+
+
 procedure TTrackBar.Create(owner: TControl);
 begin
   Self.Init(owner);
   Self.SetParent(owner);
 end;
 
+procedure TTrackBar.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TTrackBar.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topLeft, dimensions);
+end;
+
+procedure TTrackBar.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
+end;
+
+
 procedure TSimbaImageBox.Create(owner: TControl);
 begin
   Self.Init(owner);
   Self.SetParent(owner);
+end;
+
+procedure TSimbaImageBox.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TSimbaImageBox.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topLeft, dimensions);
+end;
+
+procedure TSimbaImageBox.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topLeft := [TControl.AdjustToDPI(topLeft.X), TControl.AdjustToDPI(topLeft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
 end;
 
 
@@ -1740,12 +2117,276 @@ begin
 end;
 
 
-//TODO: DELETE!!
-procedure TLabeledPanel.Setup(owner: TComponent; caption: String);
+
+procedure TLabeledPanel.Create(owner: TControl; topleft, dimensions: TPoint); overload;
 begin
   Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+end;
 
+procedure TLabeledPanel.Create(owner: TControl; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, topleft, dimensions);
+end;
+
+procedure TLabeledPanel.Create(owner: TControl; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, topleft + offset, dimensions, False);
+end;
+
+
+procedure TLabeledEdit.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
   Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TLabeledEdit.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft, dimensions);
+end;
+
+procedure TLabeledEdit.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
+end;
+
+
+
+procedure TLabeledComboBox.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TLabeledComboBox.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft, dimensions);
+end;
+
+procedure TLabeledComboBox.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
+end;
+
+
+
+procedure TLabeledCheckBox.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TLabeledCheckBox.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft, dimensions);
+end;
+
+procedure TLabeledCheckBox.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
+end;
+
+
+procedure TLabeledListBox.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TLabeledListBox.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft, dimensions);
+end;
+
+procedure TLabeledListBox.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
+end;
+
+
+procedure TLabeledMemo.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TLabeledMemo.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft, dimensions);
+end;
+
+procedure TLabeledMemo.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
+end;
+
+
+procedure TLabeledTrackBar.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TLabeledTrackBar.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft, dimensions);
+end;
+
+procedure TLabeledTrackBar.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
+end;
+
+
+procedure TCheckCheckGroup.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint); overload;
+begin
+  Self.Create(owner);
+  if topleft.X > 0 then Self.SetLeft(topleft.X);
+  if topleft.Y > 0 then Self.SetTop(topleft.Y);
+  if dimensions.X > 0 then Self.SetWidth(dimensions.X);
+  if dimensions.Y > 0 then Self.SetHeight(dimensions.Y);
+  Self.SetCaption(caption);
+  Self.SetHint(hint);
+end;
+
+procedure TCheckCheckGroup.Create(owner: TControl; caption, hint: String; topleft, dimensions: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft, dimensions);
+end;
+
+procedure TCheckCheckGroup.Create(owner: TControl; caption, hint: String; topleft, dimensions, offset: TPoint; adjustDPI: Boolean); overload;
+begin
+  if adjustDPI then
+  begin
+    topleft := [TControl.AdjustToDPI(topleft.X), TControl.AdjustToDPI(topleft.Y)];
+    dimensions := [TControl.AdjustToDPI(dimensions.X), TControl.AdjustToDPI(dimensions.Y)];
+  end;
+
+  Self.Create(owner, caption, hint, topleft + offset, dimensions, False);
 end;
 
 
