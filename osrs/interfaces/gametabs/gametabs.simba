@@ -270,7 +270,8 @@ begin
 
   for 1 to 3 do
   begin
-    Mouse.Click(Self.Tabs[tab], EMouseButton.LEFT);
+    // ForceMove to prevent a click failure when the cursor is already in the destination tab.
+    Mouse.Click(Self.Tabs[tab], EMouseButton.LEFT, True);
     if Self.WaitOpen(tab, 2000) then Exit(True);
   end;
 end;
