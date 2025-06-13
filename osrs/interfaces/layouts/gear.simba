@@ -47,7 +47,7 @@ var
 begin
   Self.Config.Setup('gearlayouts' + PATH_SEP + ToStr(PlayerIndex));
   SetLength(Self.Sets, Self.Config.Count);
-
+  AddOnTerminate(@Self.Config.Free);
   try
     for i := 0 to Self.Config.Count-1 do
     begin
