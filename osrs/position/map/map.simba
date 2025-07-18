@@ -16,6 +16,9 @@ For something simpler and much closer to the original
 {$DEFINE WL_MAP_INCLUDED}
 {$INCLUDE_ONCE WaspLib/osrs.simba}
 
+const
+  MAP_CACHE_TOLERANCE = 50;
+
 type
 (*
 ## TRSPosition
@@ -51,6 +54,9 @@ Record responsible for positioning.
       Position: TPoint;
       FullPosition: TRSPosition;
       MatchTemplate: TMatchTemplateCache;
+      
+      CurrentChunk: TPoint;      
+      CacheValid: Boolean;      
     end;
     Loader: TRSMapLoader;
 
@@ -107,6 +113,8 @@ begin
     Self.Walker.Name := 'Map.Walker';
     Self.IsSetup := True;
   end;
+  
+  Self.Cache.CacheValid := False;
 end;
 
 
@@ -275,12 +283,66 @@ var
   i: Integer;
   hit: TPoint;
   match: Single;
+  nearbyPositions: TPointArray;
 begin
+  clean := Minimap.GetCleanImage();
+  
+    // Try cached position first
+  if Self.Cache.CacheValid and (Self.Cache.LocalPosition <> [0,0]) then
+  begin
+    hit := TRSImageMap.FullSearch(clean, Self.Loader.Map, Self.Cache.LocalPosition, match);
+    
+    if match > 0.6 then
+    begin
+      Self.Similarity := match;
+      Self.Cache.LocalPosition := hit;
+      
+      Self.RegionIndex := Self.Loader.LocalIndex(hit);
+      if Self.RegionIndex >= 0 then
+      begin
+        Self.Region := Self.Loader.Regions[Self.RegionIndex];
+        Result := RSTranslator.Normalize(Self.Loader.GetGlobal(Self.RegionIndex, hit));
+        Self.Cache.Position := Result;
+        Self.Cache.CurrentChunk := RSTranslator.Global2Chunk(Result);
+        Exit(Result);
+      end;
+    end else
+    begin
+            // Try nearby positions around cached location
+      nearbyPositions := [
+        Self.Cache.LocalPosition.Offset([-MAP_CACHE_TOLERANCE, 0]),
+        Self.Cache.LocalPosition.Offset([MAP_CACHE_TOLERANCE, 0]),
+        Self.Cache.LocalPosition.Offset([0, -MAP_CACHE_TOLERANCE]),
+        Self.Cache.LocalPosition.Offset([0, MAP_CACHE_TOLERANCE])
+      ];
+      
+      for i := 0 to High(nearbyPositions) do
+      begin
+        hit := TRSImageMap.FullSearch(clean, Self.Loader.Map, nearbyPositions[i], match);
+        if match > 0.6 then
+        begin
+          Self.Similarity := match;
+          Self.Cache.LocalPosition := hit;
+          
+          Self.RegionIndex := Self.Loader.LocalIndex(hit);
+          if Self.RegionIndex >= 0 then
+          begin
+            Self.Region := Self.Loader.Regions[Self.RegionIndex];
+            Result := RSTranslator.Normalize(Self.Loader.GetGlobal(Self.RegionIndex, hit));
+            Self.Cache.Position := Result;
+            Self.Cache.CurrentChunk := RSTranslator.Global2Chunk(Result);
+            Exit(Result);
+          end;
+        end;
+      end;
+    end;
+  end;
+  
+  // Cache miss - do full search
   Self.RegionIndex := -1;
   Self.Region := [];
   Self.Similarity := 0;
 
-  clean := Minimap.GetCleanImage();
   tpa := Self.ScaledSearch(clean);
 
   for i := 0 to High(tpa) do
@@ -303,6 +365,10 @@ begin
   Self.Region := Self.Loader.Regions[Self.RegionIndex];
   Result := RSTranslator.Normalize(Self.Loader.GetGlobal(Self.RegionIndex, Result));
   Self.Cache.Position := Result;
+  
+  // Update cache
+  Self.Cache.CurrentChunk := RSTranslator.Global2Chunk(Result);
+  Self.Cache.CacheValid := True;
 end;
 
 property TRSMap.FullPosition: TRSPosition;
