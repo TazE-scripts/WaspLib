@@ -721,35 +721,6 @@ cleanIMG.Free();
 ```
 *)
 function TRSMinimap.CleanImage(img: TImage): TImage;
-
-  procedure _Paint(p: TPoint);
-  var
-    area: TBox;
-    pixel: Integer;
-    x, y: Integer;
-  begin
-    area := TBox.Create(p.X - 2, p.Y - 2, p.X + 2, p.Y + 4);
-    area := area.Clip([0,0,img.Width-1, img.Height-1]);
-
-    for y := area.Y1 to area.Y2 do
-      for x := area.X1 to area.X2 do
-      begin
-        pixel := img.Pixel[x, y];
-
-        if SimilarColors($FFFFFF, pixel, 20) then
-          img.Pixel[x, y] := 0;
-
-        if SimilarColors($00FFFF, pixel, 20) then
-          img.Pixel[x, y] := 0;
-
-        if SimilarColors($0000FF, pixel, 20) then
-          img.Pixel[x, y] := 0;
-
-        if SimilarColors($000000, pixel, 5) then
-          img.Pixel[x, y] := 0;
-      end;
-  end;
-
 var
   dots: TRSMinimapDotArray;
   dot: ERSMinimapDot;
@@ -758,11 +729,12 @@ var
 begin
   topLeft := Self.Polygon.Bounds().TopLeft;
 
+  img.DrawColor := $0;
   dots := Self.GetDots();
   for dot := ERSMinimapDot.PLAYER to ERSMinimapDot.ITEM do
     for p in dots[dot] do
-      _Paint(p.Offset(-topLeft.X, -topLeft.Y));
-  _Paint(img.Center); // our own player
+      img.DrawCircleFilled(p.Offset(-topLeft.X, -topLeft.Y).Offset(1, 1), 2);
+  img.DrawCircleFilled(img.Center, 2);
 
   //idk what the heck is this 3 lines
   img.ReplaceColor($0000FF, $0);
@@ -775,7 +747,7 @@ begin
   tpa := img.FindColor($0, 0) + img.FindColor($010000, 0);
   tpa := tpa.SortFrom(img.Center);
 
-  Result := img.Blend(tpa, 32);
+  Result := img.Blend(tpa, 8);
   Result.Pad(10);
 end;
 
@@ -839,7 +811,7 @@ begin
   tmp.Crop(TBox.Create(center, radius, radius));
   tpa := tmp.FindColor($0, 0).SortFrom(tmp.Center);
 
-  blend := tmp.Blend(tpa, 30);
+  blend := tmp.Blend(tpa, 8);
   Result := blend.Downsample(scaling);
 
   Result.DrawColor := $0;
