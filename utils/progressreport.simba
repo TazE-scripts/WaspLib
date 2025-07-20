@@ -1,120 +1,98 @@
 (*
-# Reporter
-Formatted progress reports with bordered table.
+# Progress Report
+Formatted progress reports with bordered table output.
 *)
 {$DEFINE WL_PROGRESS_REPORT_INCLUDED}
-{$INCLUDE_ONCE Wasplib/utils/logger.simba}
 {$INCLUDE_ONCE WaspLib/utils/time.simba}
 
 (*
-## TReport
+## TProgressReport
 ```pascal
-TReport = record
+TProgressReport = record
   TimeRunning: TStopwatch;
   IsSetup: Boolean;
-  ReportNames: TStringArray;
-  ValuesGetter: function: TStringArray of Object;
+  Headers: TStringArray;
+  ValueProvider: function: TStringArray of Object;
+  Title: String;
+  PrintTimer: TCountDown;
 end;
 ```
-Report record for managing progress reports with timing and formatted output.
+Progress report record for managing formatted table output with timing and print frequency control.
 *)
 type
-  TReport = record
+  TProgressReport = record
     TimeRunning: TStopwatch;
     IsSetup: Boolean;
-    ReportNames: TStringArray;
-    ValuesGetter: function: TStringArray of Object;
+    Headers: TStringArray;
+    ValueProvider: function: TStringArray of Object;
     Title: String;
+    PrintTimer: TCountDown;
   end;
 
 (*
-## TReport.Setup
+## TProgressReport.Setup
 ```pascal
-procedure TReport.Setup(reportNames: TStringArray = []);
+procedure TProgressReport.Setup(title: String = 'Progress Report'; headers: TStringArray = []);
 ```
-Sets up the reporter with column names for the progress report.
+Sets up the progress report with title and column headers.
 *)
-procedure TReport.Setup(reportNames: TStringArray = []; title: String = '');
-var
-  i, len: Integer;
-  str: String;
+procedure TProgressReport.Setup(title: String = 'Progress Report'; headers: TStringArray = []; printInterval: Integer = ONE_MINUTE * 5);
 begin
   Self.IsSetup := True;
   Self.TimeRunning.Start();
-  Self.ReportNames := [];
+  Self.Headers := headers;
   Self.Title := title;
-
-  for i := 0 to High(reportNames) do
-  begin
-    if len < Length(reportNames[i]) then
-      len := Length(reportNames[i]);
-  end;
-
-  len += 2;
-
-  for i := 0 to High(reportNames) do
-  begin
-    str := reportNames[i] + ': ';
-    Self.ReportNames += str.PadRight(len - Length(str), ' ');
-  end;
+  Self.PrintTimer.Start(printInterval);
 end;
 
 (*
-## TReport.GetTimeRunning
+## TProgressReport.GenerateReport
 ```pascal
-function TReport.GetTimeRunning(): String;
-```
-Returns the formatted elapsed time since the reporter was started.
-*)
-function TReport.GetTimeRunning(): String;
-begin
-  Result := Self.TimeRunning.ElapsedFmt();
-end;
-
-(*
-## TReport.GetReport
-```pascal
-function TReport.GetReport(values: TStringArray): String;
+function TProgressReport.GenerateReport(values: TStringArray): String;
 ```
 Generates a formatted report with the provided values in a bordered table format.
 *)
-function TReport.GetReport(values: TStringArray): String;
+function TProgressReport.GenerateReport(values: TStringArray): String;
 var
   i, totalWidth: Integer;
   half: Single;
   str, lines, btm, header: String;
-  nameLen, valueLen: Integer;
+const
+  COLUMN_WIDTH = 15;
+  SEPARATOR_WIDTH = 5;
 begin
-  if Length(Self.ReportNames) <> Length(values) then
-    raise GetTimeStamp() + ':[Reporter]: `TReport.ReportNames` and `values` need to be the same length!';
-
-  totalWidth := 15 + 15 + 5; // name column + value column + separators
-
-  for i := 0 to High(Self.ReportNames) do
+  if Length(Self.Headers) <> Length(values) then
+    raise 'TProgressReport.GenerateReport: Header count (' + 
+          IntToStr(Length(Self.Headers)) + ') must match value count (' + 
+          IntToStr(Length(values)) + ')';
+          
+  totalWidth := COLUMN_WIDTH * 2 + SEPARATOR_WIDTH;
+  
+  for i := 0 to High(Self.Headers) do
   begin
-    str := '| ' + Self.ReportNames[i].PadRight(15) + ' ' + values[i].PadRight(15) + ' |';
+    str := '| ' + Self.Headers[i].PadRight(COLUMN_WIDTH) + ' ' + 
+           values[i].PadRight(COLUMN_WIDTH) + ' |';
     lines += str + LINE_SEP;
   end;
-
+  
   btm := '+' + '-' * (totalWidth-2) + '+';
-
-  str := Self.Title;
-  if str = '' then str := 'Report';
-  half := (totalWidth + 1 - Length(str)-3)/2;
-
-  header := '+' + '-' * Floor(half) +  str + '-' * Ceil(half) + '+';
-
+  header := '+ ' + Self.Title + ' ' + '-' * (totalWidth - Length(Self.Title) - 4) + '+';
+  
   Result := header + LINE_SEP + lines + btm;
 end;
 
 (*
-## TReport.Report
+## TProgressReport.PrintReport
 ```pascal
-procedure TReport.Report();
+procedure TProgressReport.PrintReport();
 ```
-Displays the current report using the ValuesGetter function to retrieve current values.
+Displays the current report using the ValueProvider function to retrieve current values.
 *)
-procedure TReport.Report();
+procedure TProgressReport.PrintReport();
 begin
-  WriteLn Self.GetReport(Self.ValuesGetter());
+  if Self.PrintTimer.IsFinished then
+  begin
+    WriteLn Self.GenerateReport(Self.ValueProvider());
+    Self.PrintTimer.Restart();
+  end;
 end;
