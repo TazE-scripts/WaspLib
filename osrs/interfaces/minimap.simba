@@ -810,7 +810,7 @@ begin
   tmp.Crop(TBox.Create(center, radius, radius));
   tpa := tmp.FindColor($0, 0).SortFrom(tmp.Center);
 
-  blend := tmp.Blend(tpa, 10);
+  blend := tmp.Blend(tpa, 30);
   Result := blend.Downsample(scaling);
 
   Result.DrawColor := $0;
