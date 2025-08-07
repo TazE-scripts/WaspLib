@@ -103,7 +103,7 @@ Record responsible to handle the {ref}`Bank` interface.
     _IsOpenHelperBox: TBox;
     {%codetools on}
     Banks: TRSObjectArray;
-    Bankers: TRSNPCArray;
+    Bankers: TRSObjectArray;
   end;
 
 (*
@@ -1206,8 +1206,8 @@ end;
 
 procedure TRSBank._SetupMapObjects();
 begin
-  Self.Banks := TRSObjectArray.Create(ObjectsJSON.GetByAction('Bank'));
-  Self.Bankers := TRSNPCArray.Create(NPCsJSON.GetByAction('Bank'));
+  Self.Banks := TRSObjectArray.Create(ERSMapObjectType.OBJ, ObjectsJSON.GetByAction('Bank'));
+  Self.Bankers := TRSObjectArray.Create(ERSMapObjectType.NPC, NPCsJSON.GetByAction('Bank'));
 end;
 
 
@@ -1230,7 +1230,7 @@ If you are too far, it will attempt to walk closer to it.
 function TRSBank.Hover(walk: Boolean = True): Boolean;
 var
   obj: TRSObject;
-  npc: TRSNPC;
+  npc: TRSObject;
   me: TPoint;
 begin
   if (Self.Banks = []) or (Self.Bankers = []) then
@@ -1281,7 +1281,7 @@ end.
 function TRSBank.Open(walk: Boolean = True): Boolean;
 var
   obj: TRSObject;
-  npc: TRSNPC;
+  npc: TRSObject;
   me: TPoint;
 begin
   if MSInterface.IsOpen() then

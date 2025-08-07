@@ -1,7 +1,7 @@
 (*
 # RSObjects
 This page is about {ref}`RSObjects` which are an interface for interacting with
-game objects.
+game objects, NPCs, and ground items.
 *)
 
 {$DEFINE WL_RSOBJECTS_INCLUDED}
@@ -9,15 +9,30 @@ game objects.
 
 type
 (*
+## ERSMapObjectType
+```pascal
+ERSMapObjectType = (OBJ, NPC, ITEM);
+```
+Enum representing the different types of map objects.
+- OBJ: Static objects without minimap dots
+- NPC: NPCs with yellow minimap dots
+- ITEM: Ground items with red minimap dots
+*)
+  ERSMapObjectType = (OBJ, NPC, ITEM);
+
+(*
 ## TRSObject
-Main type to handle {ref}`RSObjects`.
+Main type to handle all {ref}`RSObjects` including static objects, NPCs, and ground items.
 *)
   TRSObject = record
+    ObjectType: ERSMapObjectType;
     UpText: TStringArray;
     Size: TVector3;
     Coordinates: TPointArray;
-    Rotations: TIntegerArray;
+    Rotations: TIntegerArray;    // Used by OBJ type
+    Filter: TRSDotFilter;        // Used by NPC/ITEM types
     Finder: TColorFinder;
+    UseDot: Boolean;             // Used by NPC/ITEM types
     Track: Boolean;
     Walker: PRSWalker;
   end;
@@ -31,8 +46,8 @@ Array of {ref}`TRSObject`.
 (*
 ## RSObject.Create
 ```pascal
-function TRSObject.Create(size: TVector3; coordinates: TPointArray): TRSObject; static;
-function TRSObject.Create(json: TJSONItem): TRSObject; static; overload;
+function TRSObject.Create(objectType: ERSMapObjectType; size: TVector3; coordinates: TPointArray): TRSObject; static;
+function TRSObject.Create(objectType: ERSMapObjectType; json: TJSONItem): TRSObject; static; overload;
 ```
 Constructor functions to build your {ref}`TRSObject`.
 
@@ -47,52 +62,83 @@ var
   obj: TRSObject;
 begin
   Map.Setup([ERSChunk.VARROCK]);
-  //Item[0] because this returns a JSON array. For mroe info read Map JSONs documentation.
-  obj := TRSObject.Create(ObjectsJSON.GetByName('bank', 1).Item[0]);
+  //Item[0] because this returns a JSON array. For more info read Map JSONs documentation.
+  obj := TRSObject.Create(ERSMapObjectType.OBJ, ObjectsJSON.GetByName('bank', 1).Item[0]);
 end;
 ```
 *)
-function TRSObject.Create(size: TVector3; coordinates: TPointArray): TRSObject; static;
+function TRSObject.Create(objectType: ERSMapObjectType; size: TVector3; coordinates: TPointArray): TRSObject; static;
 begin
+  Result.ObjectType := objectType;
   Result.Coordinates := coordinates;
-  SetLength(Result.Rotations, Length(coordinates));
   Result.Size := size;
+  
+  if objectType = ERSMapObjectType.OBJ then
+  begin
+    SetLength(Result.Rotations, Length(coordinates));
+  end;
 end;
 
-function TRSObject.Create(json: TJSONItem): TRSObject; static; overload;
+function TRSObject.Create(objectType: ERSMapObjectType; json: TJSONItem): TRSObject; static; overload;
 var
   i: Integer;
   colors: TColorArray;
   best: TBestColor;
+  coordIndex, sizeIndex, rotationIndex, colorIndex: Integer;
 begin
   if json.Typ <> EJSONType.OBJ then
     raise GetDebugLn('TRSObject', 'JSON Object expected, got ' + ToStr(json.Typ) + '.');
 
+  Result.ObjectType := objectType;
+
   if json.Item[1].AsString <> 'null' then
     Result.UpText := [json.Item[1].AsString];
 
-  //5 is coordinates key in trsmap jsons
-  for i := 0 to json.Item[5].Count-1 do
-    Result.Coordinates += [json.Item[5].Item[i].Item[0].AsInt, json.Item[5].Item[i].Item[1].AsInt];
+  // Different JSON indices based on object type
+  case objectType of
+    ERSMapObjectType.OBJ:
+      begin
+        coordIndex := 5;
+        sizeIndex := 6;
+        rotationIndex := 7;
+        colorIndex := 8;
+      end;
+    ERSMapObjectType.NPC:
+      begin
+        Result.UseDot := json.Item[4].AsBool; // minimap dot flag
+        coordIndex := 7;
+        sizeIndex := 6;
+        colorIndex := 8;
+      end;
+    ERSMapObjectType.ITEM:
+      raise GetDebugLn('TRSObject', 'JSON parsing for ITEM type not yet implemented.');
+  end;
 
-  //6 is size key in trsmap jsons
-  Result.Size.X := Round(json.Item[6].Item[0].AsInt * 0.8, 2);
-  Result.Size.Y := Round(json.Item[6].Item[1].AsInt * 0.8, 2);
-  Result.Size.Z := Round(json.Item[6].Item[2].AsInt / 40, 2);
+  // Parse coordinates
+  for i := 0 to json.Item[coordIndex].Count-1 do
+    Result.Coordinates += [json.Item[coordIndex].Item[i].Item[0].AsInt, json.Item[coordIndex].Item[i].Item[1].AsInt];
+
+  // Parse size
+  Result.Size.X := Round(json.Item[sizeIndex].Item[0].AsInt * 0.8, 2);
+  Result.Size.Y := Round(json.Item[sizeIndex].Item[1].AsInt * 0.8, 2);
+  Result.Size.Z := Round(json.Item[sizeIndex].Item[2].AsInt / 40, 2);
 
   if Result.Size.Z = 0.0 then
     Result.Size.Z := 3.0;
 
-  //7 is rotations key in trsmap jsons
-  for i := 0 to json.Item[7].Count-1 do
-    Result.Rotations += json.Item[7].Item[i].AsInt;
+  // Parse rotations (only for OBJ type)
+  if objectType = ERSMapObjectType.OBJ then
+  begin
+    for i := 0 to json.Item[rotationIndex].Count-1 do
+      Result.Rotations += json.Item[rotationIndex].Item[i].AsInt;
 
-  while Length(Result.Rotations) < Length(Result.Coordinates) do
-    Result.Rotations += Result.Rotations[High(Result.Rotations)];
+    while Length(Result.Rotations) < Length(Result.Coordinates) do
+      Result.Rotations += Result.Rotations[High(Result.Rotations)];
+  end;
 
-  //8 is colors key in trsmap jsons
-  for i := 0 to json.Item[8].Count-1 do
-    colors += json.Item[8].Item[i].AsInt;
+  // Parse colors
+  for i := 0 to json.Item[colorIndex].Count-1 do
+    colors += json.Item[colorIndex].Item[i].AsInt;
 
   if colors <> [] then
   begin
@@ -106,7 +152,7 @@ end;
 (*
 ## RSObjectArray.Create
 ```pascal
-function TRSObjectArray.Create(json: TJSONItem): TRSObjectArray; static; overload;
+function TRSObjectArray.Create(objectType: ERSMapObjectType; json: TJSONItem): TRSObjectArray; static; overload;
 ```
 Constructor function to build your {ref}`TRSObjectArray`.
 
@@ -121,11 +167,11 @@ var
   objs: TRSObjectArray;
 begin
   Map.Setup([ERSChunk.VARROCK]);
-  objs := TRSObject.Create(ObjectsJSON.GetByName('bank'));
+  objs := TRSObjectArray.Create(ERSMapObjectType.OBJ, ObjectsJSON.GetByName('bank'));
 end;
 ```
 *)
-function TRSObjectArray.Create(json: TJSONItem): TRSObjectArray; static; overload;
+function TRSObjectArray.Create(objectType: ERSMapObjectType; json: TJSONItem): TRSObjectArray; static; overload;
 var
   i: Integer;
 begin
@@ -134,7 +180,7 @@ begin
 
   SetLength(Result, json.Count);
   for i := 0 to High(Result) do
-    Result[i] := TRSObject.Create(json.Item[i]);
+    Result[i] := TRSObject.Create(objectType, json.Item[i]);
 end;
 
 
@@ -171,26 +217,65 @@ var
   h, diff: Single;
   i: Integer;
   dist: Double;
+  vec2: TVector2;
+  vec3: TVector3;
+  dots: TPointArray;
+  dotType: ERSMinimapDot;
+  rotation: Single;
 begin
   if angle = $FFFF then angle := Minimap.GetCompassAngle(False);
 
   h := Self.Walker^.Height(me);
 
-  for i := 0 to High(Self.Coordinates) do
+  // Handle NPC/ITEM types with minimap dots
+  if (Self.ObjectType in [ERSMapObjectType.NPC, ERSMapObjectType.ITEM]) and 
+     (Self.Filter <> []) then
   begin
-    pt := Self.Coordinates[i];
-    dist := me.DistanceTo(pt);
-    if dist <= 85 then
-    begin
-      weights += dist;
-      diff := -(h-Self.Walker^.Height(pt));
-      with Self.Walker^.Point2MMVec(me, pt, angle) do
-        Result += Minimap.Vector2MSCuboid([X + 0.15*diff, Y + 0.11*diff, 0], Self.Size, angle - DegToRad(Self.Rotations[i]),  [0,0,diff]);
+    // Select appropriate dot type
+    case Self.ObjectType of
+      ERSMapObjectType.NPC:  dotType := ERSMinimapDot.NPC;
+      ERSMapObjectType.ITEM: dotType := ERSMinimapDot.ITEM;
     end;
-  end;
+    
+    dots := Minimap.GetFilteredDotArray(dotType, Self.Walker^.FiltersToMM(me, [Self.Filter], angle));
+    if dots = [] then Exit;
 
-  if Result <> [] then
-    Result.Sort(weights, True);
+    dots := dots.SortFrom(Minimap.Center);
+    for i := 0 to High(dots) do
+    begin
+      pt := Self.Walker^.MM2Map(me, dots[i], angle); // transfer back from minimap grid to map grid
+      pt := RSTranslator.NormalizeNearestTile(pt) + [2,2]*(Ceil(Max(Self.Size.X, Self.Size.Y))-1); //Go from topleft corner to center
+      diff := -(h-Self.Walker^.Height(pt))/4;
+      vec2 := Self.Walker^.Point2MMVec(me, pt, angle); //translate back to MM space, use vectors to avoid rounding errors
+      vec3 := vec2.ToVec3(diff);
+      Result += Minimap.Vector2MSCuboid(vec3, Self.Size, angle, [0,0,diff]);
+    end;
+  end 
+  else // Handle static objects and NPCs/items without filters
+  begin
+    for i := 0 to High(Self.Coordinates) do
+    begin
+      pt := Self.Coordinates[i];
+      dist := me.DistanceTo(pt);
+      if dist <= 85 then
+      begin
+        weights += dist;
+        diff := -(h-Self.Walker^.Height(pt));
+        
+        // Apply rotation only for OBJ type
+        if Self.ObjectType = ERSMapObjectType.OBJ then
+          rotation := angle - DegToRad(Self.Rotations[i])
+        else
+          rotation := angle;
+          
+        with Self.Walker^.Point2MMVec(me, pt, angle) do
+          Result += Minimap.Vector2MSCuboid([X + 0.15*diff, Y + 0.11*diff, 0], Self.Size, rotation, [0,0,diff]);
+      end;
+    end;
+
+    if Result <> [] then
+      Result.Sort(weights, True);
+  end;
 end;
 
 (*
@@ -535,7 +620,7 @@ begin
     raise GetDebugLn('TRSObject', 'Walker pointer missing.');
   if Self.Coordinates = [] then
     raise GetDebugLn('TRSObject', 'Coordinates missing.');
-  if Length(Self.Coordinates) <> Length(Self.Rotations) then
+  if (Self.ObjectType = ERSMapObjectType.OBJ) and (Length(Self.Coordinates) <> Length(Self.Rotations)) then
     raise GetDebugLn('TRSObject', 'Coordinates and Rotations don''t match.');
 
   //TODO:
@@ -794,7 +879,7 @@ begin
     raise GetDebugLn('TRSObject', 'Walker pointer missing.');
   if Self.Coordinates = [] then
     raise GetDebugLn('TRSObject', 'Coordinates missing.');
-  if Length(Self.Coordinates) <> Length(Self.Rotations) then
+  if (Self.ObjectType = ERSMapObjectType.OBJ) and (Length(Self.Coordinates) <> Length(Self.Rotations)) then
     raise GetDebugLn('TRSObject', 'Coordinates and Rotations don''t match.');
 
   Result := Self.WalkHover([], attempts) and Self._ClickHelper(leftClick);
@@ -836,7 +921,7 @@ begin
     raise GetDebugLn('TRSObject', 'Walker pointer missing.');
   if Self.Coordinates = [] then
     raise GetDebugLn('TRSObject', 'Coordinates missing.');
-  if Length(Self.Coordinates) <> Length(Self.Rotations) then
+  if (Self.ObjectType = ERSMapObjectType.OBJ) and (Length(Self.Coordinates) <> Length(Self.Rotations)) then
     raise GetDebugLn('TRSObject', 'Coordinates and Rotations don''t match.');
 
   Result := Self.WalkHover(action, attempts);
@@ -913,17 +998,25 @@ end;
 ```pascal
 procedure TImage.DrawObject(obj: TRSObject);
 ```
-Helper method to debug TRSObjects.
+Helper method to debug TRSObjects. Draws objects with different colors based on their type.
 *)
 procedure TImage.DrawObject(obj: TRSObject);
 var
   atpa: T2DPointArray;
   cuboids: TCuboidArray;
   i: Integer;
+  bottomColor: TColor;
 begin
   if not obj.FindEx(obj.Walker^.Position(), cuboids, atpa) then Exit;
 
-  Self.DrawColor := $00FFFF;
+  // Different colors for different object types
+  case obj.ObjectType of
+    ERSMapObjectType.OBJ:  bottomColor := $00FFFF; // Yellow for objects
+    ERSMapObjectType.NPC:  bottomColor := $FFFF00; // Cyan for NPCs  
+    ERSMapObjectType.ITEM: bottomColor := $FF00FF; // Magenta for items
+  end;
+
+  Self.DrawColor := bottomColor;
   for i := 0 to High(cuboids) do
   begin
     Self.DrawTPA(cuboids[i].Bottom.Corners.Connect().Grow(1));
@@ -957,10 +1050,13 @@ end;
 
 function ToString(constref obj: TRSObject): String; override;
 begin
-  Result := '[' + ToString(obj.UpText) + ', ' +
+  Result := '[' + ToString(obj.ObjectType) + ', ' +
+                  ToString(obj.UpText) + ', ' +
                   ToString(obj.Size) + ', ' +
                   ToString(obj.Coordinates) + ', ' +
                   ToString(obj.Rotations) + ', ' +
+                  ToString(obj.Filter) + ', ' +
                   ToString(obj.Finder) + ', ' +
+                  ToString(obj.UseDot) + ', ' +
                   ToString(obj.Track) + ']';
 end;
